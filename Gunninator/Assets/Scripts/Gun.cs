@@ -47,6 +47,7 @@ public class Gun : MonoBehaviour
     public bool canShoot;
     public bool isReloading;
     public bool isAiming;
+    public bool isAutomatic;
 
     [Header("References")]
     public InputActionReference shootInput;
@@ -69,15 +70,15 @@ public class Gun : MonoBehaviour
     float _currentSpread;
     float _lastShotTime;
 
-    private Coroutine runningCoroutine;
+    public Coroutine runningCoroutine;
 
     private void Start()
     {
         _shootTimer = fireRateTime;
-
         hipFire = transform.localPosition;
-
         _currentSpread = startingSpread;
+
+        CrosshairRecoil.UpdateCrosshair(_currentSpread);
 
         UpdateUI();
     }
@@ -88,6 +89,8 @@ public class Gun : MonoBehaviour
         if (Time.time - _lastShotTime > 0.2f)
         {
             _currentSpread = Mathf.MoveTowards(_currentSpread, startingSpread, spreadRecovery * Time.deltaTime);
+
+            CrosshairRecoil.UpdateCrosshair(_currentSpread);
         }
 
         _shootTimer -= Time.deltaTime;
@@ -116,7 +119,11 @@ public class Gun : MonoBehaviour
             Crosshair.SetActive(true);
         }
 
-        if (shootInput.action.WasPressedThisFrame() && currentAmmo > 0 && !isReloading && canShoot)
+        if (shootInput.action.WasPressedThisFrame() && currentAmmo > 0 && !isReloading && canShoot && !isAutomatic)
+        {
+            Shoot();
+        }
+        else if(shootInput.action.IsPressed() && currentAmmo > 0 && !isReloading && canShoot && isAutomatic)
         {
             Shoot();
         }
@@ -151,6 +158,8 @@ public class Gun : MonoBehaviour
         {
             _currentSpread = Mathf.Min(_currentSpread + spreadIncrease, maxSpread);
         }
+
+        CrosshairRecoil.UpdateCrosshair(_currentSpread);
 
         _lastShotTime = Time.time;
 
@@ -192,7 +201,7 @@ public class Gun : MonoBehaviour
         UpdateUI();
     }
 
-    void UpdateUI()
+    public void UpdateUI()
     {
         ammoText.text = currentAmmo.ToString() + " / " + magazineSize.ToString();
     }
